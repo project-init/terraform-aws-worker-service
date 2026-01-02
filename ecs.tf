@@ -56,14 +56,14 @@ data "aws_ecs_task_definition" "main" {
   task_definition = aws_ecs_task_definition.worker.family
 }
 
-resource "aws_ecs_service" "aws-ecs-service" {
-  name                   = var.service_name
+resource "aws_ecs_service" "worker" {
+  name                   = "${var.service_name}-worker-${var.worker_name}"
   cluster                = var.ecs_cluster_arn
   task_definition        = "${aws_ecs_task_definition.worker.family}:${max(aws_ecs_task_definition.worker.revision, data.aws_ecs_task_definition.main.revision)}"
   desired_count          = var.desired_count
-  force_new_deployment   = var.force_new_deployment
+  force_new_deployment   = length(var.capacity_providers) > 0 ? true : var.force_new_deployment
+  launch_type            = length(var.capacity_providers) > 0 ? null : var.use_ec2 ? "EC2" : "FARGATE"
   enable_execute_command = true
-  launch_type            = var.use_ec2 ? "EC2" : "FARGATE"
   propagate_tags         = "SERVICE"
 
   dynamic "capacity_provider_strategy" {

@@ -41,3 +41,6 @@ terraform.rc
 
 # MacOSX Files
 .DS_Store
+
+# Terraform Lock File
+.terraform.lock.hcl
