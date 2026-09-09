@@ -3,7 +3,7 @@ opentofu = "1.11.2"
 terraform-docs = "latest"
 
 [env]
-MISE_DISABLE_BACKENDS = "aqua,ubi"
+MISE_DISABLE_BACKENDS = "ubi"
 
 [settings]
 experimental = true
@@ -12,6 +12,9 @@ experimental = true
 
 [tasks.format]
 run = "tofu fmt -recursive"
+
+[tasks.test]
+run = "tofu test"
 
 # Release
 

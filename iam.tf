@@ -52,3 +52,11 @@ resource "aws_iam_role_policy_attachment" "ecs_exec_policy" {
   role       = aws_iam_role.service.name
   policy_arn = aws_iam_policy.ecs_exec_policy.arn
 }
+
+resource "aws_iam_role_policy" "service" {
+  for_each = var.iam_policies
+
+  name   = each.key
+  role   = aws_iam_role.service.name
+  policy = each.value
+}
