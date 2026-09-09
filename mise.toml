@@ -13,6 +13,9 @@ experimental = true
 [tasks.format]
 run = "tofu fmt -recursive"
 
+[tasks.test]
+run = "tofu test"
+
 # Release
 
 [tasks.start-release]
