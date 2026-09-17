@@ -79,6 +79,13 @@ variable "force_new_deployment" {
 ### ECS Task
 ########################################################################################################################
 
+variable "iam_policies" {
+  type        = map(string)
+  default     = {}
+  nullable    = false
+  description = "Map of inline policy names to IAM policy JSON documents to attach to the worker task role."
+}
+
 variable "environment_variables" {
   type = list(object({
     name  = string
