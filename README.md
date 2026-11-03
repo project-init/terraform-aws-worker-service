@@ -28,6 +28,28 @@ The default is `{}`, which creates no additional inline policies. Policies
 attach to the service IAM role, which this module currently uses as both the
 ECS task role and execution role.
 
+### Container health check
+
+Pass `health_check` to give the container a health check. ECS counts a new
+task as healthy only once the check passes, so a rolling deploy keeps the old
+tasks running until then, and a task that crashes at startup never replaces
+them.
+
+```hcl
+health_check = {
+  command      = ["CMD", "/usr/bin/app", "healthcheck"]
+  start_period = 30
+}
+```
+
+`interval`, `timeout`, and `retries` default to ECS's 30, 5, and 3, and
+`start_period` is unset unless you pass it. All times are whole seconds. The
+default is `null`, which leaves the container without a health check.
+
+The service has no deployment circuit breaker, so ECS keeps replacing new tasks
+that fail the check. A deploy that waits for the service to stabilize times out
+rather than finishing.
+
 ## Useful Docs
 
 * [Code of Conduct](./CODE_OF_CONDUCT.md)
@@ -38,7 +60,7 @@ ECS task role and execution role.
 
 | Name | Version |
 | ---- | ------- |
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.81.0 |
 
 ## Providers
@@ -88,6 +110,7 @@ No modules.
 | <a name="input_environment"></a> [environment](#input\_environment) | The environment to deploy the worker service to. | `string` | n/a | yes |
 | <a name="input_environment_variables"></a> [environment\_variables](#input\_environment\_variables) | The environment variables to use for the service. | <pre>list(object({<br/>    name  = string<br/>    value = string<br/>  }))</pre> | `[]` | no |
 | <a name="input_force_new_deployment"></a> [force\_new\_deployment](#input\_force\_new\_deployment) | Whether to force a new deployment when updating the ecs service. | `bool` | `false` | no |
+| <a name="input_health_check"></a> [health\_check](#input\_health\_check) | The container health check. ECS counts a new task as healthy only once it passes, so a rolling deploy keeps the old tasks until then. Times are whole seconds. | <pre>object({<br/>    command      = list(string)<br/>    interval     = optional(number, 30)<br/>    timeout      = optional(number, 5)<br/>    retries      = optional(number, 3)<br/>    start_period = optional(number)<br/>  })</pre> | `null` | no |
 | <a name="input_iam_policies"></a> [iam\_policies](#input\_iam\_policies) | Map of inline policy names to IAM policy JSON documents to attach to the worker task role. | `map(string)` | `{}` | no |
 | <a name="input_image"></a> [image](#input\_image) | The docker image to use for the container. | `string` | n/a | yes |
 | <a name="input_max_capacity"></a> [max\_capacity](#input\_max\_capacity) | The maximum amount of the tasks to run. | `number` | `0` | no |

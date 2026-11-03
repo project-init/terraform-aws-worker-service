@@ -6,6 +6,40 @@ locals {
     // This is a commonly overlooked variable as it is needed to have your aws default config correctly manage the region.
     { name : "AWS_REGION", value : data.aws_region.current.region }
   ])
+
+  main_container = merge(
+    {
+      name        = "main"
+      image       = var.image
+      entryPoint  = []
+      environment = local.task_env_variables
+      secrets     = var.secrets
+      essential   = true
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.log-group.id
+          awslogs-region        = data.aws_region.current.region
+          awslogs-stream-prefix = "${var.service_name}-${var.environment}"
+        }
+      }
+      cpu         = var.cpu
+      memory      = var.memory
+      networkMode = "awsvpc"
+    },
+    var.health_check == null ? {} : {
+      // ECS omits an unset startPeriod, so sending one only when set keeps plans free of diffs.
+      healthCheck = merge(
+        {
+          command  = var.health_check.command
+          interval = var.health_check.interval
+          timeout  = var.health_check.timeout
+          retries  = var.health_check.retries
+        },
+        var.health_check.start_period == null ? {} : { startPeriod = var.health_check.start_period },
+      )
+    },
+  )
 }
 
 resource "aws_ecs_task_definition" "worker" {
@@ -16,29 +50,7 @@ resource "aws_ecs_task_definition" "worker" {
     cpu_architecture        = "ARM64"
   }
 
-  container_definitions = <<DEFINITION
-  [
-    {
-      "name": "main",
-      "image": "${var.image}",
-      "entryPoint": [],
-      "environment": ${jsonencode(local.task_env_variables)},
-      "secrets": ${jsonencode(var.secrets)},
-      "essential": true,
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "${aws_cloudwatch_log_group.log-group.id}",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "${var.service_name}-${var.environment}"
-        }
-      },
-      "cpu": ${var.cpu},
-      "memory": ${var.memory},
-      "networkMode": "awsvpc"
-    }
-  ]
-  DEFINITION
+  container_definitions = jsonencode([local.main_container])
 
   requires_compatibilities = [var.use_ec2 ? "EC2" : "FARGATE"]
   network_mode             = "awsvpc"

@@ -104,6 +104,64 @@ variable "secrets" {
   description = "The secrets to use for the service."
 }
 
+variable "health_check" {
+  type = object({
+    command      = list(string)
+    interval     = optional(number, 30)
+    timeout      = optional(number, 5)
+    retries      = optional(number, 3)
+    start_period = optional(number)
+  })
+  default     = null
+  description = "The container health check. ECS counts a new task as healthy only once it passes, so a rolling deploy keeps the old tasks until then. Times are whole seconds."
+
+  validation {
+    condition = var.health_check == null || try(
+      contains(["CMD", "CMD-SHELL"], var.health_check.command[0]) && length(var.health_check.command) > 1,
+      false
+    )
+    error_message = "health_check.command must start with CMD or CMD-SHELL and name the command to run."
+  }
+
+  validation {
+    condition = var.health_check == null || try(
+      floor(var.health_check.interval) == var.health_check.interval &&
+      var.health_check.interval >= 5 && var.health_check.interval <= 300,
+      false
+    )
+    error_message = "health_check.interval must be a whole number of seconds from 5 to 300."
+  }
+
+  validation {
+    condition = var.health_check == null || try(
+      floor(var.health_check.timeout) == var.health_check.timeout &&
+      var.health_check.timeout >= 2 && var.health_check.timeout <= 60,
+      false
+    )
+    error_message = "health_check.timeout must be a whole number of seconds from 2 to 60."
+  }
+
+  validation {
+    condition = var.health_check == null || try(
+      floor(var.health_check.retries) == var.health_check.retries &&
+      var.health_check.retries >= 1 && var.health_check.retries <= 10,
+      false
+    )
+    error_message = "health_check.retries must be a whole number from 1 to 10."
+  }
+
+  validation {
+    condition = var.health_check == null || try(
+      var.health_check.start_period == null || (
+        floor(var.health_check.start_period) == var.health_check.start_period &&
+        var.health_check.start_period >= 0 && var.health_check.start_period <= 300
+      ),
+      false
+    )
+    error_message = "health_check.start_period must be a whole number of seconds from 0 to 300."
+  }
+}
+
 variable "image" {
   type        = string
   nullable    = false
