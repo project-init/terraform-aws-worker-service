@@ -39,8 +39,14 @@ data "aws_iam_policy_document" "ecs_exec_policy" {
 }
 
 resource "aws_iam_policy" "ecs_exec_policy" {
-  name   = "${var.service_name}-ecs-exec-policy"
+  // Two workers, or a worker and an api-service, can share a service_name, so the policy names the worker.
+  name   = "${var.service_name}-${var.worker_name}-ecs-exec-policy"
   policy = data.aws_iam_policy_document.ecs_exec_policy.json
+
+  // A renamed policy replaces the old one; creating it first keeps the role's exec permissions throughout.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "service_policy" {

@@ -137,3 +137,12 @@ run "named_policies_attach_to_service_role" {
     error_message = "All workload policies must attach to the service role."
   }
 }
+
+run "exec_policy_names_the_worker" {
+  command = plan
+
+  assert {
+    condition     = aws_iam_policy.ecs_exec_policy.name == "service-worker-ecs-exec-policy"
+    error_message = "The exec policy must name the worker, so workers sharing a service_name don't collide."
+  }
+}
